@@ -9,6 +9,7 @@ During requirement analysis of data, be it table structure, checking quality of 
 1. Generate C# classes with Id as key and other foreign keys detected.
 2. Generate SQL tables with Id as IDENTITY (1,1), and adding foreign keys detected
 
+Note - Currently, they're very little validation checks in place.
 ## RoadMap
 *  Add seeding statements for C#
 *  Add seeding for SQL tables
