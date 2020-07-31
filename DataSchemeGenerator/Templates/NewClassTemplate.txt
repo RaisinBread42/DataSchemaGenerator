@@ -1,0 +1,7 @@
+﻿
+    public class [CLASS_NAME]
+    {
+        [Key]
+        public int Id { get; set; }
+        [PROP_NAME]
+    }

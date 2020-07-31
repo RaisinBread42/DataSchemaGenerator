@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30011.22
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DataSchemeGenerator", "DataSchemeGenerator\DataSchemeGenerator.csproj", "{C8F18A0A-BE2A-4203-BA4C-C6BCAED07F30}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{C8F18A0A-BE2A-4203-BA4C-C6BCAED07F30}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C8F18A0A-BE2A-4203-BA4C-C6BCAED07F30}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C8F18A0A-BE2A-4203-BA4C-C6BCAED07F30}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C8F18A0A-BE2A-4203-BA4C-C6BCAED07F30}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3E949E82-0B03-4D9B-B9A3-03182A8B3699}
+	EndGlobalSection
+EndGlobal
