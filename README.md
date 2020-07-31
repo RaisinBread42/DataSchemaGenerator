@@ -23,7 +23,7 @@ Simply create tables starting from cell A1, and remember the folloing rules.
 *  Worksheet names will be used for class and table names. Using nonalphabetical characters may result in the program not working correctly.
 *  To add foreign keys, simply prepend FK_ followed by the name of the table/worksheet holding the references.
 
-Please see DataSchemeGenerator/Templates/TestClassGenerationDataFile.xlsx as an example.
+Please see ```DataSchemeGenerator/Templates/TestClassGenerationDataFile.xlsx``` as an example.
 
 ### Generating Schemas
 Pretty straight forward. Upload the Excel file to be used, check whether you want C# classes generated, if so optionally enter namespace to use, and or SQL tables to be generated.
