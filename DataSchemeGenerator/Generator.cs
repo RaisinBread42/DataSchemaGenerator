@@ -67,36 +67,49 @@ namespace DataSchemeGenerator
                 foreach (var worksheet in package.Workbook.Worksheets)
                 {
                     string worksheetTableGenerationResult = newSQLTableTemplate;
-                    //get Column Count. Do not consider empty columns
-                    //get row count. Do not consider empty rows
                     colCount = worksheet.Dimension.End.Column;  
                     rowCount = worksheet.Dimension.End.Row;
 
                     worksheetTableGenerationResult = worksheetTableGenerationResult.Replace("[TABLE_NAME]", worksheet.Name);
-                    for (int row = 1; row <= 1; row++)
+                    for (int row = 1; row <= rowCount; row++)
                     {
+                        string insertStatement = String.Empty;
+                        bool headerRow = row == 1;
                         for (int col = 1; col <= colCount; col++)
                         {
                             var currentCell = worksheet.Cells[row, col];
                             string variableType = GetSQLColType(currentCell);
 
-                            worksheetTableGenerationResult = UpdateSQLColumns(worksheet.Name, currentCell, worksheetTableGenerationResult);
-                            worksheetTableGenerationResult = DefinePrimaryKey(worksheet.Name, currentCell, worksheetTableGenerationResult);
+                            #region SQL Table Definition
+                            if (headerRow)
+                            {
+                                worksheetTableGenerationResult = UpdateSQLColumns(worksheet.Name, currentCell, worksheetTableGenerationResult);
+                                worksheetTableGenerationResult = DefinePrimaryKey(worksheet.Name, currentCell, worksheetTableGenerationResult);
+                            }
+                            #endregion
+
+                            #region References and Generate Seed Insert
                             worksheetTableWrapperGenerationResult = UpdateSQLReferences(worksheet.Name, currentCell, worksheetTableWrapperGenerationResult);
+
+                            if(!headerRow)
+                                insertStatement = GenerateSQLSeedInsert(worksheet.Name, insertStatement, currentCell.Text, variableType, isLastCol: col == colCount);
+                            #endregion
                         }
 
-                        //clean up placeholder
-                        worksheetTableGenerationResult = worksheetTableGenerationResult.Replace("    [COL_NAME]\r\n", "");
+                        if (!headerRow)
+                            worksheetTableWrapperGenerationResult = UpdateSQLSeedInserts(insertStatement, worksheetTableWrapperGenerationResult);
 
-                        tableResults = string.Concat(tableResults, worksheetTableGenerationResult);
+                        //clean up placeholder and update final SQL for header row only
+                        if (headerRow)
+                        {
+                            worksheetTableGenerationResult = worksheetTableGenerationResult.Replace("\n    [COL_NAME]","");
+                            tableResults = string.Concat(tableResults, worksheetTableGenerationResult);
+                        }
                     }
                 }
 
-                //clean up
-                worksheetTableWrapperGenerationResult = worksheetTableWrapperGenerationResult.Replace("[REFERENCES]", "");
-
                 // create final SQL 
-                SQLResults = worksheetTableWrapperGenerationResult.Replace("[TABLES]", tableResults).Replace("[REFERENCES]", "");
+                SQLResults = CleanUpSQLResult(worksheetTableWrapperGenerationResult.Replace("[TABLES]", tableResults));
 
                 //finally save file 
                 File.WriteAllText(resultFileName, SQLResults);
@@ -113,7 +126,7 @@ namespace DataSchemeGenerator
 
         #region SQL Generation Helpers
 
-        private string UpdateSQLColumns(string worksheetName, ExcelRange cell, string worksheetTableGenerationResult)
+        private string UpdateSQLColumns(string tableName, ExcelRange cell, string worksheetTableGenerationResult)
         {
             string variableType = GetSQLColType(cell);
 
@@ -128,14 +141,12 @@ namespace DataSchemeGenerator
             else
                 //replace placeholder with new prop, then put placeholder on new line for next prop
                 return worksheetTableGenerationResult.Replace("    [COL_NAME]", String.Concat("    [", cell.Text, "] ", variableType, " NULL,", "\n    [COL_NAME]"));
-
-            return string.Empty;
         }
-        private string DefinePrimaryKey(string worksheetName, ExcelRange cell, string worksheetTableGenerationResult)
+        private string DefinePrimaryKey(string tableName, ExcelRange cell, string worksheetTableGenerationResult)
         {
-            return worksheetTableGenerationResult.Replace("[PK]", String.Concat("CONSTRAINT [PK_",worksheetName,"] PRIMARY KEY CLUSTERED\n ( [Id] ASC) WITH ( PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY] \n) ON[PRIMARY] \n GO"));
+            return worksheetTableGenerationResult.Replace("[PK]", String.Concat("CONSTRAINT [PK_",tableName,"] PRIMARY KEY CLUSTERED\n ( [Id] ASC) WITH ( PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY] \n) ON[PRIMARY] \n GO"));
         }
-        private string UpdateSQLReferences(string worksheetName, ExcelRange cell,string SQLWrapperGenerationResult)
+        private string UpdateSQLReferences(string tableName, ExcelRange cell,string SQLWrapperGenerationResult)
         {
             string variableType = GetSQLColType(cell);
 
@@ -145,11 +156,32 @@ namespace DataSchemeGenerator
                 // add FK constraint 
                 var varName = cell.Text.Replace("FK_", "");
                 SQLWrapperGenerationResult = SQLWrapperGenerationResult
-                    .Replace("[REFERENCES]", String.Concat("ALTER TABLE [dbo].[", worksheetName, "] WITH CHECK ADD  CONSTRAINT [FK_", worksheetName, "_", varName, "_", varName, "Id] FOREIGN KEY([", varName, "Id]) REFERENCES[dbo].[", varName, "]([Id]) ON DELETE CASCADE\nGO\n[REFERENCES]"));
+                    .Replace("[REFERENCES]", String.Concat("ALTER TABLE [dbo].[", tableName, "] WITH CHECK ADD  CONSTRAINT [FK_", tableName, "_", varName, "_", varName, "Id] FOREIGN KEY([", varName, "Id]) REFERENCES[dbo].[", varName, "]([Id]) ON DELETE CASCADE\nGO\n[REFERENCES]"));
                 return SQLWrapperGenerationResult;
             }
 
             return SQLWrapperGenerationResult;
+        }
+        private string GenerateSQLSeedInsert(string tableName, string insertStatement, string colValue, string varType, bool isLastCol)
+        {
+            var valFormatted = SQLInsertColValueFormatted(colValue, varType);
+
+            if (string.IsNullOrEmpty(insertStatement))
+                return insertStatement = String.Concat("INSERT INTO [dbo].[", tableName, "] VALUES (", valFormatted, ",");
+            else if (!isLastCol)
+                return insertStatement = String.Concat(insertStatement, valFormatted, ",");
+            else
+                return insertStatement = String.Concat(insertStatement, valFormatted, ");");
+        }
+        private string SQLInsertColValueFormatted(string value, string varType) => 
+            varType switch
+            {
+                "INT" => value,
+                _     => String.Concat("'",value,"'") // varType = "NVARCHAR(200)"
+            };
+        private string UpdateSQLSeedInserts(string insertStatement, string worksheetTableWrapperGenerationResult)
+        {
+            return worksheetTableWrapperGenerationResult.Replace("[SEED]", String.Concat(insertStatement, "\n[SEED]"));
         }
         private string GetSQLColType(ExcelRange cell)
         {
@@ -157,6 +189,11 @@ namespace DataSchemeGenerator
                 return "INT";
 
             return "NVARCHAR(200)";
+        }
+
+        private string CleanUpSQLResult(string sql)
+        {
+            return sql.Replace("[REFERENCES]", "").Replace("[SEED]", "");
         }
         #endregion
 
