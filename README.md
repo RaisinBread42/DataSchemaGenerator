@@ -9,7 +9,7 @@ During requirement analysis of data, be it table structure, checking quality of 
 1. Generate C# classes with Id as key and other foreign keys detected.
 2. Generate SQL tables with Id as IDENTITY (1,1), foreign keys, and seed statements.
 
-Known Bug - all tables that are being used as the source for Foreign Keys need to be defined first within the Excel file. Else inserts will not be generated in the correct order.
+Known Bug - all worksheets/tables that are being used as the source for Foreign Keys need to be defined first within the Excel file. Else inserts will not be generated in the correct order.
 
 Note - Currently, they're very little validation checks in place.
 ## RoadMap
